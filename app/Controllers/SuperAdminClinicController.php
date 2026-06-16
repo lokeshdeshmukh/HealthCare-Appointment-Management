@@ -27,11 +27,17 @@ final class SuperAdminClinicController extends Controller
     {
         $this->admins->ensureDefaultAdmin();
         $deployToken = (string) env('DEPLOY_TOKEN', '');
+        $smsBridgeToken = (string) env('SMS_BRIDGE_TOKEN', '');
         $this->view('super-admin/dashboard', [
             'title' => 'Platform Clinics',
             'clinics' => $this->clinics->allForPlatform(),
             'deployToken' => $deployToken,
             'deployHookUrl' => rtrim((string) config('app.url'), '/') . '/deploy/run-updates?token=' . urlencode($deployToken),
+            'smsBridgeEnabled' => (bool) config('services.sms.bridge_enabled', false),
+            'smsBridgeToken' => $smsBridgeToken,
+            'smsBridgeBatchLimit' => (int) config('services.sms.bridge_batch_limit', 25),
+            'smsPendingUrl' => rtrim((string) config('app.url'), '/') . '/api/pending-sms?token=' . urlencode($smsBridgeToken),
+            'smsStatusUrl' => rtrim((string) config('app.url'), '/') . '/api/sms-status',
         ]);
     }
 
@@ -66,15 +72,26 @@ final class SuperAdminClinicController extends Controller
             $token = bin2hex(random_bytes(24));
         }
 
+        $smsBridgeToken = trim((string) $request->input('sms_bridge_token'));
+        if ($smsBridgeToken === '') {
+            $smsBridgeToken = (string) env('SMS_BRIDGE_TOKEN', '');
+        }
+
+        $smsBridgeEnabled = (string) $request->input('sms_bridge_enabled', (string) ((bool) config('services.sms.bridge_enabled', false) ? '1' : '0'));
+        $smsBridgeBatchLimit = max(1, (int) $request->input('sms_bridge_batch_limit', (int) config('services.sms.bridge_batch_limit', 25)));
+
         try {
             $this->env->set([
                 'DEPLOY_TOKEN' => $token,
+                'SMS_BRIDGE_ENABLED' => in_array($smsBridgeEnabled, ['1', 'true', 'on', 'yes'], true) ? 'true' : 'false',
+                'SMS_BRIDGE_TOKEN' => $smsBridgeToken,
+                'SMS_BRIDGE_BATCH_LIMIT' => (string) $smsBridgeBatchLimit,
             ]);
         } catch (\Throwable $exception) {
             $this->redirect('/super-admin/dashboard', $exception->getMessage(), 'error');
         }
 
-        $this->redirect('/super-admin/dashboard', 'Deploy token updated successfully.');
+        $this->redirect('/super-admin/dashboard', 'Platform delivery settings updated successfully.');
     }
 
     public function toggleStatus(Request $request, $id): never

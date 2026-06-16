@@ -73,7 +73,7 @@ $googleClientId = $googleClientId ?? '';
                     <input id="email_mobile" type="email" name="email" value="<?= e((string) old('email')) ?>" placeholder="Used for appointment confirmations if available">
                 </div>
                 <?php if (!$smsConfigured): ?>
-                    <p class="auth-inline-note">SMS OTP is available after the platform SMS gateway is configured. You can still use email OTP or Google right away.</p>
+                    <p class="auth-inline-note">SMS OTP becomes available after the platform SMS delivery method is configured. You can still use email OTP or Google right away.</p>
                 <?php endif; ?>
                 <button class="btn-primary w-full" type="submit"<?= !$smsConfigured ? ' disabled' : '' ?>>Send mobile OTP</button>
             </form>

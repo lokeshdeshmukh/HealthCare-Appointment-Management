@@ -8,8 +8,8 @@
     <div class="grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
         <div class="panel">
             <p class="text-sm uppercase tracking-[0.22em] text-slate-500">Deployment control</p>
-            <h2 class="mt-2 text-2xl font-semibold">Deploy token and hook URL</h2>
-            <p class="mt-3 text-sm text-slate-500">This token protects the update endpoint used by Git deployment hooks. Keep it only at platform level.</p>
+            <h2 class="mt-2 text-2xl font-semibold">Deploy and SMS bridge settings</h2>
+            <p class="mt-3 text-sm text-slate-500">Keep deployment access and mobile OTP delivery settings at platform level. Your Android app can poll pending OTP SMS requests from here.</p>
             <form method="post" action="<?= e(url('/super-admin/deploy-token')) ?>" class="mt-6 grid gap-4">
                 <?= csrf_field() ?>
                 <div>
@@ -20,7 +20,32 @@
                     <label for="deploy_hook_url">Deploy hook URL</label>
                     <input id="deploy_hook_url" value="<?= e($deployHookUrl) ?>" readonly>
                 </div>
-                <button class="btn-primary" type="submit">Save deploy token</button>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="sms_bridge_enabled">SMS bridge</label>
+                        <select id="sms_bridge_enabled" name="sms_bridge_enabled">
+                            <option value="0" <?= !$smsBridgeEnabled ? 'selected' : '' ?>>Disabled</option>
+                            <option value="1" <?= $smsBridgeEnabled ? 'selected' : '' ?>>Enabled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sms_bridge_batch_limit">Pending SMS batch size</label>
+                        <input id="sms_bridge_batch_limit" type="number" min="1" max="100" name="sms_bridge_batch_limit" value="<?= e((string) $smsBridgeBatchLimit) ?>">
+                    </div>
+                </div>
+                <div>
+                    <label for="sms_bridge_token">SMS bridge token</label>
+                    <input id="sms_bridge_token" name="sms_bridge_token" value="<?= e($smsBridgeToken) ?>" placeholder="Set a secret token used by the Android sender app">
+                </div>
+                <div>
+                    <label for="sms_pending_url">Pending SMS API</label>
+                    <input id="sms_pending_url" value="<?= e($smsPendingUrl) ?>" readonly>
+                </div>
+                <div>
+                    <label for="sms_status_url">SMS status API</label>
+                    <input id="sms_status_url" value="<?= e($smsStatusUrl) ?>" readonly>
+                </div>
+                <button class="btn-primary" type="submit">Save platform settings</button>
             </form>
         </div>
 

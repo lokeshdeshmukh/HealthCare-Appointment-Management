@@ -43,9 +43,16 @@ final class PatientAccessService
             'full_name' => trim((string) ($data['full_name'] ?? '')),
             'email' => normalize_email((string) ($data['email'] ?? '')),
             'phone' => normalize_phone((string) ($data['phone'] ?? '')),
+            'phone_raw' => trim((string) ($data['phone'] ?? '')),
             'redirect_to' => (string) ($data['redirect_to'] ?? ''),
             'clinic_name' => $clinic['name'] ?? null,
         ];
+
+        if ($channel === 'mobile') {
+            $bridgePayload = $this->sms->buildBridgePayload($destination, $otp, (string) ($data['phone'] ?? ''));
+            $metadata['sms_phone'] = $bridgePayload['phone'];
+            $metadata['sms_message'] = $bridgePayload['message'];
+        }
 
         $patient = $channel === 'mobile'
             ? $this->patients->findByPhone($destination)
@@ -82,8 +89,9 @@ final class PatientAccessService
                 throw new RuntimeException('Unable to send the OTP email right now. Please try again in a moment.');
             }
         } else {
-            $result = $this->sms->sendOtp($destination, $otp);
-            $this->otps->markDelivery($otpId, $result['success'] ? 'sent' : 'failed', $result['success'] ? null : $result['message']);
+            $result = $this->sms->sendOtp($destination, $otp, (string) ($data['phone'] ?? ''));
+            $deliveryStatus = (string) ($result['delivery_status'] ?? ($result['success'] ? 'sent' : 'failed'));
+            $this->otps->markDelivery($otpId, $deliveryStatus, $result['success'] ? null : $result['message']);
 
             if (!$result['success']) {
                 throw new RuntimeException($result['message']);

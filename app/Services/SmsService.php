@@ -8,24 +8,54 @@ final class SmsService
 {
     public function isConfigured(): bool
     {
-        return trim((string) config('services.sms.gateway_url', '')) !== '';
+        return $this->bridgeEnabled() || trim((string) config('services.sms.gateway_url', '')) !== '';
     }
 
-    public function sendOtp(string $phone, string $otp): array
+    public function bridgeEnabled(): bool
     {
+        return (bool) config('services.sms.bridge_enabled', false) && $this->bridgeToken() !== '';
+    }
+
+    public function bridgeToken(): string
+    {
+        return trim((string) config('services.sms.bridge_token', ''));
+    }
+
+    public function bridgeBatchLimit(): int
+    {
+        return max(1, (int) config('services.sms.bridge_batch_limit', 25));
+    }
+
+    public function buildBridgePayload(string $phone, string $otp, string $rawPhone = ''): array
+    {
+        return [
+            'phone' => $this->formatBridgePhone($phone, $rawPhone),
+            'message' => $this->composeOtpMessage($otp),
+        ];
+    }
+
+    public function sendOtp(string $phone, string $otp, string $rawPhone = ''): array
+    {
+        if ($this->bridgeEnabled()) {
+            $payload = $this->buildBridgePayload($phone, $otp, $rawPhone);
+
+            return [
+                'success' => true,
+                'message' => 'OTP queued for SMS bridge delivery.',
+                'delivery_status' => 'pending',
+                'bridge_payload' => $payload,
+            ];
+        }
+
         if (!$this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'SMS gateway is not configured yet. Please use email OTP or Google sign-in for now.',
+                'delivery_status' => 'failed',
             ];
         }
 
-        $message = sprintf(
-            '%s login code is %s. It expires in %d minutes.',
-            (string) config('app.name', 'ClinicFlow'),
-            $otp,
-            (int) config('services.otp.ttl_minutes', 10)
-        );
+        $message = $this->composeOtpMessage($otp);
 
         $body = strtr((string) config('services.sms.body_template', ''), [
             '{{phone}}' => $phone,
@@ -45,13 +75,43 @@ final class SmsService
             return [
                 'success' => true,
                 'message' => 'OTP sent to mobile.',
+                'delivery_status' => 'sent',
             ];
         }
 
         return [
             'success' => false,
             'message' => $response['message'],
+            'delivery_status' => 'failed',
         ];
+    }
+
+    private function composeOtpMessage(string $otp): string
+    {
+        return sprintf(
+            '%s login code is %s. It expires in %d minutes.',
+            (string) config('app.name', 'ClinicFlow'),
+            $otp,
+            (int) config('services.otp.ttl_minutes', 10)
+        );
+    }
+
+    private function formatBridgePhone(string $phone, string $rawPhone = ''): string
+    {
+        $rawPhone = trim($rawPhone);
+        if ($rawPhone !== '') {
+            $normalizedRaw = preg_replace('/(?!^\+)[^\d]+/', '', $rawPhone) ?? $rawPhone;
+            if ($normalizedRaw !== '') {
+                return $normalizedRaw;
+            }
+        }
+
+        $digits = trim($phone);
+        if ($digits === '') {
+            return $digits;
+        }
+
+        return str_starts_with($digits, '+') ? $digits : '+' . $digits;
     }
 
     private function sendRequest(string $url, string $method, array $headers, string $body): array

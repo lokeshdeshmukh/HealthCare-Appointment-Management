@@ -12,6 +12,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Services\AuthService;
 use App\Services\PatientAccessService;
+use App\Services\SmsService;
 
 final class PatientAuthController extends Controller
 {
@@ -78,7 +79,7 @@ final class PatientAuthController extends Controller
             'redirectTo' => $redirectTo,
             'challenge' => $challenge,
             'loginMode' => $mode,
-            'smsConfigured' => trim((string) config('services.sms.gateway_url', '')) !== '',
+            'smsConfigured' => (new SmsService())->isConfigured(),
             'googleClientId' => trim((string) config('services.google.client_id', '')),
         ]);
     }
