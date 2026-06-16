@@ -15,7 +15,7 @@ for ($offset = 0; $offset < 14; $offset++) {
 $scopedClinic = current_clinic();
 $returnTarget = $redirectTo ?? '/doctors/' . $doctor['id'] . '/book';
 $googleClientId = trim((string) config('services.google.client_id', ''));
-$smsConfigured = trim((string) config('services.sms.gateway_url', '')) !== '';
+$smsConfigured = $smsConfigured ?? false;
 $patient = Auth::check('patient') ? Auth::user() : null;
 $patientDisplayName = $patient ? trim((string) (($patient['first_name'] ?? '') . ' ' . ($patient['last_name'] ?? ''))) : '';
 $clinicName = $scopedClinic['name'] ?? $doctor['clinic_name'];
@@ -180,7 +180,7 @@ $clinicPhoneHref = !empty($doctor['clinic_phone'])
                             <input id="booking_email_mobile" type="email" name="email" placeholder="Needed if you want email confirmations">
                         </div>
                         <?php if (!$smsConfigured): ?>
-                            <p class="auth-inline-note">SMS OTP will start working once your SMS gateway is configured. Until then, use email OTP or Google.</p>
+                            <p class="auth-inline-note">SMS OTP becomes available after the platform SMS delivery method is configured. Until then, use email OTP or Google.</p>
                         <?php endif; ?>
                         <button class="btn-primary w-full" type="submit"<?= !$smsConfigured ? ' disabled' : '' ?>>Send mobile OTP</button>
                     </form>

@@ -10,6 +10,7 @@ use App\Core\Controller;
 use App\Core\Request;
 use App\Models\Doctor;
 use App\Services\AppointmentService;
+use App\Services\SmsService;
 
 final class BookingController extends Controller
 {
@@ -34,6 +35,7 @@ final class BookingController extends Controller
             'doctor' => $doctor,
             'patientLoggedIn' => Auth::check('patient'),
             'redirectTo' => '/doctors/' . (int) $doctor['id'] . '/book',
+            'smsConfigured' => (new SmsService())->isConfigured(),
         ]);
     }
 
