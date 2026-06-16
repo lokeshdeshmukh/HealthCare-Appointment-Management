@@ -1098,19 +1098,6 @@ body.is-patient-surface .site-main{
   display:none;
 }
 
-.booking-surface__calendar-input{
-  display:grid;
-  grid-template-columns:auto minmax(0,1fr);
-  align-items:center;
-  gap:10px;
-}
-
-.booking-surface__calendar-input label{
-  font-size:.82rem;
-  font-weight:700;
-  color:#5f738e;
-}
-
 .booking-surface__notes{
   min-height:88px;
 }
@@ -1723,10 +1710,6 @@ body.is-patient-surface .site-main{
     width:34px;
     height:34px;
     font-size:1rem;
-  }
-
-  .booking-surface__calendar-input{
-    grid-template-columns:minmax(0,1fr);
   }
 
   .site-mobile-topbar__eyebrow{

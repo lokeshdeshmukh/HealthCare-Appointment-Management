@@ -56,6 +56,7 @@ $clinicPhoneHref = !empty($doctor['clinic_phone'])
     <form method="post" action="<?= e(url('/doctors/' . $doctor['id'] . '/book')) ?>" class="booking-surface__form" data-booking-form>
         <?= csrf_field() ?>
         <input type="hidden" name="doctor_id" value="<?= e((string) $doctor['id']) ?>" data-slot-doctor>
+        <input type="hidden" name="appointment_date" value="<?= e($quickDates[0]['value']) ?>" data-slot-date>
         <input type="hidden" name="start_time" data-slot-input required>
 
         <div class="booking-surface__panel">
@@ -88,19 +89,6 @@ $clinicPhoneHref = !empty($doctor['clinic_phone'])
                     </div>
                 </div>
                 <button type="button" class="booking-date-pager__nav" data-date-scroll="next" aria-label="Show more dates">›</button>
-            </div>
-
-            <div class="booking-surface__calendar-input">
-                <label for="appointment_date">Other day</label>
-                <input
-                    id="appointment_date"
-                    type="date"
-                    name="appointment_date"
-                    min="<?= e(date('Y-m-d')) ?>"
-                    value="<?= e($quickDates[0]['value']) ?>"
-                    data-slot-date
-                    required
-                >
             </div>
         </div>
 
