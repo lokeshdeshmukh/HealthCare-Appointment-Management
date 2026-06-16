@@ -58,7 +58,22 @@ function url(string $path = ''): string
 
 function asset(string $path): string
 {
-    return url('assets/' . ltrim($path, '/'));
+    $assetPath = 'assets/' . ltrim($path, '/');
+    $assetUrl = url($assetPath);
+    $version = trim((string) (config('app.build.commit') ?: config('app.build.version') ?: ''));
+
+    if ($version === '') {
+        $fullPath = public_path($assetPath);
+        if (is_file($fullPath)) {
+            $version = (string) filemtime($fullPath);
+        }
+    }
+
+    if ($version === '') {
+        return $assetUrl;
+    }
+
+    return $assetUrl . (str_contains($assetUrl, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
 }
 
 function e(mixed $value): string

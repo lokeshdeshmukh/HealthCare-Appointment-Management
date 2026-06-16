@@ -74,10 +74,15 @@ final class ClinicDirectoryController extends Controller
 
     private function renderClinicExperience(array $clinic, string $title): never
     {
+        $doctors = $this->doctorCards((string) $clinic['slug']);
+        if (count($doctors) === 1 && !empty($doctors[0]['id'])) {
+            $this->redirect('/doctors/' . $doctors[0]['id'] . '/book');
+        }
+
         $this->view('clinics/show', [
             'title' => $title,
             'clinic' => $clinic,
-            'doctors' => $this->doctorCards((string) $clinic['slug']),
+            'doctors' => $doctors,
         ]);
     }
 
