@@ -9,9 +9,14 @@ use App\Core\Model;
 final class SuperAdmin extends Model
 {
     protected string $table = 'super_admins';
+    private ?bool $hasUsernameColumn = null;
 
     public function findByUsername(string $username): ?array
     {
+        if (!$this->hasUsernameColumn()) {
+            return null;
+        }
+
         $statement = $this->db->prepare('SELECT * FROM super_admins WHERE username = :username AND deleted_at IS NULL LIMIT 1');
         $statement->execute(['username' => strtolower(trim($username))]);
 
@@ -29,6 +34,11 @@ final class SuperAdmin extends Model
     public function findByUsernameOrEmail(string $identifier): ?array
     {
         $normalized = strtolower(trim($identifier));
+        if (!$this->hasUsernameColumn()) {
+            $email = $normalized === 'admin' ? 'admin@huviena.local' : normalize_email($identifier);
+            return $this->findByEmail($email);
+        }
+
         $statement = $this->db->prepare('SELECT * FROM super_admins WHERE (username = :username OR email = :email) AND deleted_at IS NULL LIMIT 1');
         $statement->execute([
             'username' => $normalized,
@@ -48,5 +58,17 @@ final class SuperAdmin extends Model
     public function allActive(): array
     {
         return $this->db->query('SELECT * FROM super_admins WHERE deleted_at IS NULL ORDER BY created_at ASC')->fetchAll();
+    }
+
+    public function hasUsernameColumn(): bool
+    {
+        if ($this->hasUsernameColumn !== null) {
+            return $this->hasUsernameColumn;
+        }
+
+        $statement = $this->db->query("SHOW COLUMNS FROM super_admins LIKE 'username'");
+        $this->hasUsernameColumn = $statement !== false && $statement->fetch() !== false;
+
+        return $this->hasUsernameColumn;
     }
 }

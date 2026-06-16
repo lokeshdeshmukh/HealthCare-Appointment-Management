@@ -40,9 +40,8 @@ final class SuperAdminService
         }
 
         $now = date('Y-m-d H:i:s');
-        $adminId = $this->admins->insert([
+        $payload = [
             'name' => trim((string) ($data['name'] ?? 'Platform Admin')),
-            'username' => $this->normalizeUsername((string) ($data['username'] ?? $email)),
             'email' => $email,
             'password_hash' => password_hash((string) $data['password'], PASSWORD_DEFAULT),
             'status' => 'active',
@@ -50,7 +49,12 @@ final class SuperAdminService
             'created_at' => $now,
             'updated_at' => $now,
             'deleted_at' => null,
-        ]);
+        ];
+        if ($this->admins->hasUsernameColumn()) {
+            $payload['username'] = $this->normalizeUsername((string) ($data['username'] ?? $email));
+        }
+
+        $adminId = $this->admins->insert($payload);
 
         return $this->admins->findActiveById($adminId) ?? [];
     }
@@ -58,38 +62,44 @@ final class SuperAdminService
     public function ensureDefaultAdmin(): void
     {
         $now = date('Y-m-d H:i:s');
+        $hasUsernameColumn = $this->admins->hasUsernameColumn();
         $admin = $this->admins->findByUsername(self::DEFAULT_ADMIN_USERNAME);
 
         if ($admin) {
-            $this->admins->updateById((int) $admin['id'], [
+            $payload = [
                 'name' => self::DEFAULT_ADMIN_NAME,
-                'username' => self::DEFAULT_ADMIN_USERNAME,
                 'email' => self::DEFAULT_ADMIN_EMAIL,
                 'password_hash' => self::DEFAULT_ADMIN_PASSWORD_HASH,
                 'status' => 'active',
                 'deleted_at' => null,
                 'updated_at' => $now,
-            ]);
+            ];
+            if ($hasUsernameColumn) {
+                $payload['username'] = self::DEFAULT_ADMIN_USERNAME;
+            }
+            $this->admins->updateById((int) $admin['id'], $payload);
             return;
         }
 
         $admin = $this->admins->findByEmail(self::DEFAULT_ADMIN_EMAIL);
         if ($admin) {
-            $this->admins->updateById((int) $admin['id'], [
+            $payload = [
                 'name' => self::DEFAULT_ADMIN_NAME,
-                'username' => self::DEFAULT_ADMIN_USERNAME,
                 'email' => self::DEFAULT_ADMIN_EMAIL,
                 'password_hash' => self::DEFAULT_ADMIN_PASSWORD_HASH,
                 'status' => 'active',
                 'deleted_at' => null,
                 'updated_at' => $now,
-            ]);
+            ];
+            if ($hasUsernameColumn) {
+                $payload['username'] = self::DEFAULT_ADMIN_USERNAME;
+            }
+            $this->admins->updateById((int) $admin['id'], $payload);
             return;
         }
 
-        $this->admins->insert([
+        $payload = [
             'name' => self::DEFAULT_ADMIN_NAME,
-            'username' => self::DEFAULT_ADMIN_USERNAME,
             'email' => self::DEFAULT_ADMIN_EMAIL,
             'password_hash' => self::DEFAULT_ADMIN_PASSWORD_HASH,
             'status' => 'active',
@@ -97,7 +107,12 @@ final class SuperAdminService
             'created_at' => $now,
             'updated_at' => $now,
             'deleted_at' => null,
-        ]);
+        ];
+        if ($hasUsernameColumn) {
+            $payload['username'] = self::DEFAULT_ADMIN_USERNAME;
+        }
+
+        $this->admins->insert($payload);
     }
 
     public function attemptLogin(string $identifier, string $password): bool
