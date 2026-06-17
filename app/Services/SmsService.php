@@ -6,6 +6,14 @@ namespace App\Services;
 
 final class SmsService
 {
+    private const OTP_MESSAGE_TEMPLATES = [
+        'Use this OTP %s - CF',
+        'Here is your OTP %s - CF',
+        'Your code is %s - CF',
+        'OTP %s - CF',
+        'Use %s as your OTP - CF',
+    ];
+
     public function isConfigured(): bool
     {
         return $this->bridgeEnabled() || trim((string) config('services.sms.gateway_url', '')) !== '';
@@ -88,7 +96,54 @@ final class SmsService
 
     private function composeOtpMessage(string $otp): string
     {
-        return sprintf('Use this OTP %s - CF', $otp);
+        $templates = self::OTP_MESSAGE_TEMPLATES;
+        $index = $this->nextOtpMessageTemplateIndex(count($templates));
+
+        return sprintf($templates[$index] ?? $templates[0], $otp);
+    }
+
+    private function nextOtpMessageTemplateIndex(int $count): int
+    {
+        if ($count <= 1) {
+            return 0;
+        }
+
+        $directory = storage_path('cache');
+        if (!is_dir($directory)) {
+            @mkdir($directory, 0775, true);
+        }
+
+        $file = $directory . DIRECTORY_SEPARATOR . 'sms-template-rotation.txt';
+        $handle = @fopen($file, 'c+');
+        if ($handle === false) {
+            return 0;
+        }
+
+        $index = 0;
+
+        try {
+            if (!flock($handle, LOCK_EX)) {
+                return 0;
+            }
+
+            $raw = stream_get_contents($handle);
+            $current = is_string($raw) ? trim($raw) : '';
+            if ($current !== '' && ctype_digit($current)) {
+                $index = ((int) $current) % $count;
+            }
+
+            $next = ($index + 1) % $count;
+
+            rewind($handle);
+            ftruncate($handle, 0);
+            fwrite($handle, (string) $next);
+            fflush($handle);
+            flock($handle, LOCK_UN);
+        } finally {
+            fclose($handle);
+        }
+
+        return $index;
     }
 
     private function formatBridgePhone(string $phone, string $rawPhone = ''): string
