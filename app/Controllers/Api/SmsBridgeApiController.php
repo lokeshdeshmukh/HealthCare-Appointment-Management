@@ -36,7 +36,7 @@ final class SmsBridgeApiController extends Controller
         if ($id < 1 || !in_array($status, ['sent', 'failed'], true)) {
             $this->json([
                 'ok' => false,
-                'message' => 'Valid id and status are required.',
+                'message' => 'Valid id and status are required. Allowed status values: sent, failed.',
             ], 422);
         }
 
@@ -51,6 +51,11 @@ final class SmsBridgeApiController extends Controller
         $this->json([
             'ok' => true,
             'message' => 'SMS status updated.',
+            'data' => [
+                'id' => (string) $id,
+                'status' => $status,
+                'error' => $error,
+            ],
         ]);
     }
 

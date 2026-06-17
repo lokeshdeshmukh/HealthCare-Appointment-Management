@@ -138,6 +138,7 @@ final class AuthOtp extends Model
 
             $queue[] = [
                 'id' => (string) $row['id'],
+                'status' => 'pending',
                 'phone' => $phone,
                 'message' => $message,
             ];
